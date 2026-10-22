@@ -1,0 +1,45 @@
+# Python
+venv/
+myenv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+.Python
+env/
+.env
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+
+# Dataset (large image dataset - ~408 MB total, not suitable for Git)
+data/
+
+# Large ML model files (>100MB precaution)
+*.h5
+*.keras
+*.pt
+*.pth
+*.ckpt
+*.pb
+
+# Uploaded/temp images (keep directory, ignore runtime uploads)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Quarantine folder
+_to_delete/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantPulse | Cotton Crop Health & Disease Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom_ui.css') }}">
+    <style>
+        .hero-banner-wrap {
+            position: relative;
+            background: linear-gradient(135deg, rgba(21, 128, 61, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%), 
+                        url("{{ url_for('static', filename='cotton.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            padding: 70px 20px 90px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .upload-portal-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow-hover);
+            padding: 32px;
+            max-width: 680px;
+            margin: -60px auto 40px;
+            position: relative;
+            z-index: 10;
+            transition: all var(--transition-smooth);
+        }
+
+        .action-submit-btn {
+            background: linear-gradient(135deg, var(--color-primary) 0%, #16a34a 100%);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1.05rem;
+            padding: 14px 32px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 14px var(--color-primary-glow);
+        }
+
+        .action-submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--color-primary-glow);
+            filter: brightness(1.06);
+        }
+
+        .action-submit-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .feature-card-modern {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: all var(--transition-smooth);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .feature-card-modern:hover {
+            transform: translateY(-8px);
+            border-color: var(--color-primary);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .feature-icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            transition: all var(--transition-fast);
+        }
+
+        .feature-card-modern:hover .feature-icon-circle {
+            background: var(--color-primary);
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Toast Notifications Container -->
+    <div class="toast-container-custom" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-pulse-ring"></div>
+        <div class="loading-title"><i class="fas fa-leaf me-2 text-success"></i>Analyzing leaf...</div>
+        <div class="loading-subtitle">Extracting pathology patterns & running neural inference</div>
+    </div>
+
+    <!-- Sticky Glass Navbar -->
+    <header class="main-navbar-wrapper">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand d-flex align-items-center gap-2 text-white text-decoration-none" href="/">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="PlantPulse Logo"
+                         style="height: 38px; width: 38px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                    <span class="fw-bold fs-4 tracking-wide">PlantPulse</span>
+                </a>
+
+                <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars fs-4 text-white"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link-item active" href="/"><i class="fas fa-search"></i> Disease Detection</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/al"><i class="fas fa-robot"></i> Virtual Assistant</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/weather"><i class="fas fa-cloud-sun"></i> Weather Forecast</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/comparison"><i class="fas fa-chart-line"></i> Model Comparison</a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Theme Toggle Button -->
+                        <button class="theme-toggle-btn" id="themeToggleBtn" type="button" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="hero-banner-wrap">
+        <div class="container">
+            <span class="badge px-3 py-2 rounded-pill mb-3" style="background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); font-size: 0.9rem; font-weight: 600;">
+                <i class="fas fa-shield-virus me-1 text-warning"></i> AI-Powered Crop Disease Diagnosis
+            </span>
+            <h1 class="fw-bold display-5 mb-3">Revolutionizing Plant Health Monitoring</h1>
+            <p class="mx-auto fs-5 text-white-50" style="max-width: 640px;">
+                Instant, laboratory-grade detection of cotton foliar diseases with neural networks and precision treatment guidance.
+            </p>
+        </div>
+    </section>
+
+    <!-- Upload & Model Selection Portal -->
+    <div class="container">
+        <div class="upload-portal-card" id="detect">
+            <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm">
+                
+                <!-- Section 1: Interactive Model Selection Cards -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.98rem;">
+                            <i class="fas fa-microchip me-1 text-success"></i> 1. Select Detection Model
+                        </label>
+                        <a href="/comparison" class="text-decoration-none text-success fw-semibold" style="font-size: 0.85rem;">
+                            View Benchmark <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Hidden Select Element synced with model cards for strict backend compatibility -->
+                    <select class="d-none" id="modelSelect" name="model_id">
+                        {% for m in available_models %}
+                            <option value="{{ m.id }}" {% if m.is_default %}selected{% endif %}>
+                                {{ m.name }} ({{ m.accuracy }}) {% if m.badge %}- {{ m.badge }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- Clickable Cards Grid -->
+                    <div class="model-selector-grid" id="modelCardsContainer">
+                        {% for m in available_models %}
+                            <div class="model-card-item {% if m.is_default %}selected{% endif %}" 
+                                 data-model-id="{{ m.id }}"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-pressed="{% if m.is_default %}true{% else %}false{% endif %}">
+                                <div class="model-card-title">
+                                    <span>{{ m.name }}</span>
+                                    <i class="fas fa-check-circle model-check-icon"></i>
+                                </div>
+                                <div class="model-card-accuracy">{{ m.accuracy }}</div>
+                                <div>
+                                    <span class="model-badge-tag">{{ m.badge if m.badge else 'Active' }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Section 2: Drag & Drop Upload Zone -->
+                <div class="mb-4 text-start">
+                    <label class="form-label fw-bold mb-2 text-slate-800" style="font-size: 0.98rem;">
+                        <i class="fas fa-cloud-arrow-up me-1 text-success"></i> 2. Upload Leaf Photograph
+                    </label>
+
+                    <!-- Native File Input -->
+                    <input type="file" name="file" id="file" accept="image/png, image/jpeg, image/jpg, image/webp" class="d-none">
+
+                    <!-- Interactive Dropzone -->
+                    <div class="drop-zone" id="dropZone" tabindex="0" role="button">
+                        <div id="dropZonePrompt">
+                            <i class="fas fa-cloud-arrow-up drop-zone-icon"></i>
+                            <div class="drop-zone-title">Drag & drop cotton leaf image here</div>
+                            <p class="drop-zone-desc">or <span class="text-success fw-bold text-decoration-underline">browse from device</span> (PNG, JPG, WEBP &bull; Max 15MB)</p>
+                        </div>
+
+                        <!-- Instant Preview Container -->
+                        <div class="upload-preview-container" id="previewContainer">
+                            <img src="" alt="Selected Leaf Preview" class="upload-preview-image" id="previewImage">
+                            <div class="upload-preview-info" id="previewFileInfo"></div>
+                            <div class="upload-preview-actions">
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" id="changeImageBtn">
+                                    <i class="fas fa-arrows-rotate me-1"></i> Change Image
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="removeImageBtn">
+                                    <i class="fas fa-trash me-1"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="action-submit-btn" id="submitBtn">
+                    <i class="fas fa-wand-magic-sparkles"></i> Detect Disease & Get Solutions
+                </button>
+            </form>
+
+            <div class="d-flex justify-content-center gap-3 mt-4 pt-2 border-top">
+                <a href="/learn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-book-open me-1"></i> Learn More
+                </a>
+                <a href="/comparison" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                    <i class="fas fa-chart-bar me-1"></i> Accuracy Benchmark
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <section class="py-5 bg-transparent">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h3 class="fw-bold mb-2">Integrated Smart Farm Management</h3>
+                <p class="text-muted">Combining vision intelligence, tailored agronomy remedies, and atmospheric analytics.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-microscope"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Disease Detection</h5>
+                        <p class="text-muted mb-0">Multimodal classification across 7 target classes with automated anomaly rejection for non-crop images.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-user-doctor"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Virtual Agronomist</h5>
+                        <p class="text-muted mb-0">Interactive AI assistant ready to advise on dosage, organic preparations, and IPM field protocols.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-cloud-bolt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Weather Forecasting</h5>
+                        <p class="text-muted mb-0">Live atmospheric metrics to calculate optimal spray windows and prevent disease proliferation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modern Footer -->
+    <footer class="py-4 border-top mt-5" style="background: var(--color-surface);">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center text-muted">
+            <div>
+                <strong class="text-success">PlantPulse</strong> &bull; &copy; 2026 Cotton Disease Intelligence Platform.
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="mailto:contact@plantpulse.com" class="text-decoration-none text-muted"><i class="fas fa-envelope me-1"></i> Support</a>
+                <a href="/comparison" class="text-decoration-none text-muted"><i class="fas fa-chart-simple me-1"></i> Metrics</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Client-side Interactive Logic -->
+    <script>
+        (function() {
+            // Theme Management
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const htmlEl = document.documentElement;
+
+            function applyTheme(theme) {
+                htmlEl.setAttribute('data-theme', theme);
+                localStorage.setItem('plantpulse_theme', theme);
+                if (theme === 'dark') {
+                    themeIcon.className = 'fas fa-sun text-warning';
+                } else {
+                    themeIcon.className = 'fas fa-moon text-white';
+                }
+            }
+
+            const savedTheme = localStorage.getItem('plantpulse_theme') || 
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+
+            themeToggleBtn.addEventListener('click', function() {
+                const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            // Toast Notification Helper
+            const toastContainer = document.getElementById('toastContainer');
+            function showToast(message, isError = false) {
+                const toast = document.createElement('div');
+                toast.className = `toast-custom ${isError ? 'toast-error' : ''}`;
+                toast.innerHTML = `
+                    <i class="fas ${isError ? 'fa-circle-exclamation text-danger' : 'fa-circle-check text-success'} fs-5"></i>
+                    <div>${message}</div>
+                `;
+                toastContainer.appendChild(toast);
+                requestAnimationFrame(() => toast.classList.add('show'));
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400);
+                }, 3800);
+            }
+
+            // Model Selection Cards Sync
+            const modelCards = document.querySelectorAll('.model-card-item');
+            const modelSelect = document.getElementById('modelSelect');
+
+            modelCards.forEach(card => {
+                function selectCard() {
+                    modelCards.forEach(c => {
+                        c.classList.remove('selected');
+                        c.setAttribute('aria-pressed', 'false');
+                    });
+                    card.classList.add('selected');
+                    card.setAttribute('aria-pressed', 'true');
+                    const modelId = card.getAttribute('data-model-id');
+                    if (modelSelect) {
+                        modelSelect.value = modelId;
+                    }
+                }
+
+                card.addEventListener('click', selectCard);
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectCard();
+                    }
+                });
+            });
+
+            // Drag and Drop & Image Preview Handling
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('file');
+            const dropZonePrompt = document.getElementById('dropZonePrompt');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const previewFileInfo = document.getElementById('previewFileInfo');
+            const removeImageBtn = document.getElementById('removeImageBtn');
+            const changeImageBtn = document.getElementById('changeImageBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+
+            function handleFile(file) {
+                if (!file) return;
+
+                if (!ALLOWED_TYPES.includes(file.type)) {
+                    showToast('Please select a valid image file (JPEG, PNG, or WEBP).', true);
+                    return;
+                }
+
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast('Selected image exceeds the 15MB limit.', true);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    const sizeKB = (file.size / 1024).toFixed(1);
+                    const sizeStr = file.size > 1024 * 1024 ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : `${sizeKB} KB`;
+                    previewFileInfo.textContent = `${file.name} (${sizeStr})`;
+                    
+                    dropZonePrompt.style.display = 'none';
+                    previewContainer.style.display = 'block';
+                    showToast(`Loaded ${file.name} successfully!`);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function resetFile() {
+                fileInput.value = '';
+                previewImage.src = '';
+                previewFileInfo.textContent = '';
+                previewContainer.style.display = 'none';
+                dropZonePrompt.style.display = 'block';
+            }
+
+            // Click to browse
+            dropZone.addEventListener('click', function(e) {
+                if (e.target.closest('#removeImageBtn') || e.target.closest('#changeImageBtn')) return;
+                fileInput.click();
+            });
+
+            changeImageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            removeImageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                resetFile();
+                showToast('Image removed.');
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    handleFile(fileInput.files[0]);
+                }
+            });
+
+            // Drag and drop events
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('dragover');
+                });
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length > 0) {
+                    const droppedFile = dt.files[0];
+                    fileInput.files = dt.files;
+                    handleFile(droppedFile);
+                }
+            });
+
+            // Form Submit with Validation & Loading Overlay
+            uploadForm.addEventListener('submit', function(e) {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    e.preventDefault();
+                    showToast('Please select or drop a cotton leaf image before detecting.', true);
+                    dropZone.classList.add('border-danger');
+                    setTimeout(() => dropZone.classList.remove('border-danger'), 1500);
+                    return;
+                }
+
+                // Show loading overlay and disable submit button
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Analyzing leaf...';
+                loadingOverlay.classList.add('active');
+            });
+        })();
+    </script>
+</body>
+</html>

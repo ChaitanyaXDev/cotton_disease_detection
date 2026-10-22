@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Comparison & Benchmark | PlantPulse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom_ui.css') }}">
+    <style>
+        .benchmark-hero-wrap {
+            background: linear-gradient(135deg, rgba(22, 101, 52, 0.95) 0%, rgba(15, 23, 42, 0.96) 100%);
+            color: #ffffff;
+            padding: 55px 20px 75px;
+            text-align: center;
+        }
+
+        .benchmark-main-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow-hover);
+            padding: 32px;
+            margin-top: -50px;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .algo-explainer-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            height: 100%;
+            transition: all var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .algo-explainer-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-hover);
+            border-color: var(--color-primary);
+        }
+
+        .algo-explainer-card.featured {
+            border-color: #10b981;
+            background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-surface) 35%);
+        }
+
+        .algo-bullets {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+            font-size: 0.93rem;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+        }
+
+        .algo-bullets li {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 8px;
+        }
+
+        .algo-bullets li::before {
+            content: "•";
+            color: var(--color-primary);
+            font-size: 1.3rem;
+            position: absolute;
+            left: 4px;
+            top: -2px;
+        }
+
+        .chart-box-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 28px;
+            text-align: center;
+            margin-bottom: 45px;
+        }
+
+        .chart-zoom-wrap {
+            position: relative;
+            display: inline-block;
+            cursor: zoom-in;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform var(--transition-smooth);
+        }
+
+        .chart-zoom-wrap:hover {
+            transform: scale(1.015);
+        }
+
+        .chart-zoom-wrap img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+        }
+
+        .mini-progress-track {
+            height: 6px;
+            background: var(--color-border);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            width: 0%;
+            transition: width 1.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lightbox Modal for Chart Zoom -->
+    <div class="image-lightbox" id="chartLightbox" tabindex="0" role="dialog" aria-modal="true" aria-label="Expanded Chart View">
+        <img src="/static/comparison.png" alt="Full Benchmark Chart" id="lightboxChartImg">
+    </div>
+
+    <!-- Sticky Glass Navbar -->
+    <header class="main-navbar-wrapper">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand d-flex align-items-center gap-2 text-white text-decoration-none" href="/">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="PlantPulse Logo"
+                         style="height: 38px; width: 38px; border-radius: 50%; object-fit: cover;">
+                    <span class="fw-bold fs-4 tracking-wide">PlantPulse</span>
+                </a>
+
+                <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars fs-4 text-white"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/"><i class="fas fa-search"></i> Disease Detection</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/al"><i class="fas fa-robot"></i> Virtual Assistant</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item" href="/weather"><i class="fas fa-cloud-sun"></i> Weather Forecast</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-item active" href="/comparison"><i class="fas fa-chart-line"></i> Model Comparison</a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="theme-toggle-btn" id="themeToggleBtn" type="button" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Header -->
+    <section class="benchmark-hero-wrap">
+        <div class="container">
+            <span class="badge px-3 py-2 rounded-pill mb-3" style="background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); font-size: 0.9rem; font-weight: 600;">
+                <i class="fas fa-scale-balanced me-1 text-warning"></i> Empirical Scientific Benchmark
+            </span>
+            <h1 class="fw-bold display-5 mb-2">Algorithm Performance & Generalization Analysis</h1>
+            <p class="fs-5 text-white-50 mx-auto" style="max-width: 680px;">
+                Direct comparative benchmark between MobileNetV2 (Transfer Learning) and Custom CNN (From Scratch) on identical 384 test images.
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Comparison Section -->
+    <div class="container">
+        
+        <!-- Table Card -->
+        <div class="benchmark-main-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fas fa-table-list me-2 text-success"></i>Head-to-Head Performance Table</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Evaluated under exact 70/15/15 stratified split and identical image normalization.</p>
+                </div>
+                <span class="badge bg-success rounded-pill px-3 py-2 fs-6 shadow-sm">
+                    <i class="fas fa-trophy me-1 text-warning"></i> Winner: MobileNetV2 ({{ (metrics_m2.get('test_accuracy', 0.8854) * 100)|round(2) }}%)
+                </span>
+            </div>
+
+            <!-- Modern Table: 2 Models Only -->
+            <div class="table-responsive">
+                <table class="table-comparison-modern align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th class="text-start" style="width: 36%;">Evaluation Metric</th>
+                            <th class="winner-col" style="width: 32%;">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <i class="fas fa-crown text-warning"></i>
+                                    <strong>MobileNetV2</strong>
+                                </div>
+                                <small class="text-muted d-block fw-normal">(Transfer Learning &bull; Recommended)</small>
+                            </th>
+                            <th style="width: 32%;">
+                                <strong>Sequential 3-Block CNN</strong>
+                                <small class="text-muted d-block fw-normal">(Built From Scratch)</small>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Test Accuracy Row with Progress Bars -->
+                        <tr class="table-light-highlight">
+                            <td class="text-start fw-bold">
+                                <div>Test Accuracy</div>
+                                <small class="text-muted fw-normal">Generalization on unseen leaves</small>
+                            </td>
+                            <td class="winner-col">
+                                <span class="fw-bold text-success fs-5 count-up-val" data-target="{{ (metrics_m2.get('test_accuracy', 0.8854) * 100)|round(2) }}">0.0%</span>
+                                <div class="mini-progress-track">
+                                    <div class="mini-progress-fill" style="background: #15803d;" data-width="{{ (metrics_m2.get('test_accuracy', 0.8854) * 100)|round(1) }}%"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary fs-6 count-up-val" data-target="{{ (metrics_m1.get('test_accuracy', 0.7474) * 100)|round(2) }}">0.0%</span>
+                                <div class="mini-progress-track">
+                                    <div class="mini-progress-fill" style="background: #3b82f6;" data-width="{{ (metrics_m1.get('test_accuracy', 0.7474) * 100)|round(1) }}%"></div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Weighted Precision -->
+                        <tr>
+                            <td class="text-start fw-bold">Weighted Precision</td>
+                            <td class="winner-col text-success fw-bold count-up-val" data-target="{{ (metrics_m2.get('precision_weighted', 0.8957) * 100)|round(2) }}">0.0%</td>
+                            <td class="text-primary count-up-val" data-target="{{ (metrics_m1.get('precision_weighted', 0.7685) * 100)|round(2) }}">0.0%</td>
+                        </tr>
+
+                        <!-- Weighted Recall -->
+                        <tr>
+                            <td class="text-start fw-bold">Weighted Recall</td>
+                            <td class="winner-col text-success fw-bold count-up-val" data-target="{{ (metrics_m2.get('recall_weighted', 0.8854) * 100)|round(2) }}">0.0%</td>
+                            <td class="text-primary count-up-val" data-target="{{ (metrics_m1.get('recall_weighted', 0.7474) * 100)|round(2) }}">0.0%</td>
+                        </tr>
+
+                        <!-- Weighted F1-Score -->
+                        <tr>
+                            <td class="text-start fw-bold">Weighted F1-Score</td>
+                            <td class="winner-col text-success fw-bold count-up-val" data-target="{{ (metrics_m2.get('f1_weighted', 0.8848) * 100)|round(2) }}">0.0%</td>
+                            <td class="text-primary fw-bold count-up-val" data-target="{{ (metrics_m1.get('f1_weighted', 0.7470) * 100)|round(2) }}">0.0%</td>
+                        </tr>
+
+                        <!-- Training Duration -->
+                        <tr>
+                            <td class="text-start fw-bold">Training Duration</td>
+                            <td class="winner-col">{{ "%.1fs"|format(metrics_m2.get('training_time_seconds', 260.5)) }}</td>
+                            <td>{{ "%.1fs"|format(metrics_m1.get('training_time_seconds', 286.7)) }}</td>
+                        </tr>
+
+                        <!-- Architecture Type -->
+                        <tr>
+                            <td class="text-start fw-bold">Architecture Type</td>
+                            <td class="winner-col"><span class="badge bg-success rounded-pill px-3 py-1">Inverted Residuals</span></td>
+                            <td><span class="badge bg-primary rounded-pill px-3 py-1">3-Block Conv2D + Dropout</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SECTION: How Each Algorithm Works -->
+            <div class="mt-5 pt-3 border-top">
+                <div class="text-start mb-4">
+                    <h4 class="fw-bold mb-1"><i class="fas fa-brain me-2 text-success"></i>How Each Algorithm Works</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Understanding the core architectural differences and engineering trade-offs.</p>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Card 1: MobileNetV2 (Transfer Learning) -->
+                    <div class="col-lg-6">
+                        <div class="algo-explainer-card featured">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-bolt text-success fs-5"></i>
+                                        <h5 class="fw-bold mb-0">MobileNetV2</h5>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill px-3 py-1">Transfer Learning</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fs-4 fw-bold text-success">{{ (metrics_m2.get('test_accuracy', 0.8854) * 100)|round(2) }}%</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.85rem;">Test Accuracy</span>
+                                </div>
+                                <ul class="algo-bullets">
+                                    <li>Starts with a model already trained on over 1 million everyday images (ImageNet), so it already knows edges, textures and shapes.</li>
+                                    <li>We keep that knowledge and only train a new final layer to recognize cotton diseases.</li>
+                                    <li>Uses lightweight depthwise separable convolutions, so it is fast and small.</li>
+                                    <li>Learns from less data and reaches higher accuracy.</li>
+                                    <li><strong>Strength:</strong> best accuracy. <strong>Limitation:</strong> depends on a pretrained model.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Custom CNN (Built From Scratch) -->
+                    <div class="col-lg-6">
+                        <div class="algo-explainer-card">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-layer-group text-primary fs-5"></i>
+                                        <h5 class="fw-bold mb-0">Sequential 3-Block CNN</h5>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill px-3 py-1">From Scratch</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fs-4 fw-bold text-primary">{{ (metrics_m1.get('test_accuracy', 0.7474) * 100)|round(2) }}%</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.85rem;">Test Accuracy</span>
+                                </div>
+                                <ul class="algo-bullets">
+                                    <li>A CNN designed by us with 3 convolution blocks (32 → 64 → 128 filters).</li>
+                                    <li>Conv layers find patterns in leaf images, pooling shrinks the image, dropout reduces overfitting, and a final softmax layer gives the disease class.</li>
+                                    <li>Learns everything from our cotton dataset only, with no prior knowledge.</li>
+                                    <li><strong>Strength:</strong> simple and fully customizable. <strong>Limitation:</strong> needs more data and training to match pretrained models.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Winner Summary Callout -->
+            <div class="alert alert-success mt-4 mb-0 d-flex align-items-center rounded-4 border-0 shadow-sm" role="alert">
+                <i class="fas fa-circle-check fa-2x me-3 text-success"></i>
+                <div style="font-size: 0.95rem; line-height: 1.5;">
+                    <strong>Benchmark Conclusion:</strong>
+                    <strong>MobileNetV2 ({{ (metrics_m2.get('test_accuracy', 0.8854) * 100)|round(2) }}% Test Accuracy)</strong> achieves top rank, outperforming the scratch-trained Sequential 3-Block CNN ({{ (metrics_m1.get('test_accuracy', 0.7474) * 100)|round(2) }}%) by over 13 percentage points through ImageNet transfer learning while retaining a compact footprint ideal for deployment.
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Chart Section with Click-to-Zoom -->
+        <div class="chart-box-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="text-start">
+                    <h4 class="fw-bold mb-1"><i class="fas fa-chart-column me-2 text-primary"></i>Visual Benchmark & Loss Convergence</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.88rem;">Generated automatically by <code>compare_accuracy.py</code> from validation logs.</p>
+                </div>
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                    <i class="fas fa-magnifying-glass-plus me-1 text-primary"></i> Click Chart to Zoom
+                </span>
+            </div>
+
+            <div class="chart-zoom-wrap" id="chartZoomTrigger" title="Click to view full-resolution comparison chart">
+                <img src="{{ url_for('static', filename='comparison.png') }}" alt="Model Comparison Chart" onerror="this.src='/results-image/comparison.png'">
+            </div>
+        </div>
+
+        <!-- Back to Detection Button -->
+        <div class="text-center mb-5">
+            <a href="/" class="btn btn-success btn-lg px-4 py-3 rounded-pill fw-bold shadow-sm">
+                <i class="fas fa-arrow-left me-2"></i> Back to Disease Detection
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4 border-top mt-5" style="background: var(--color-surface);">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center text-muted">
+            <div>
+                <strong class="text-success">PlantPulse</strong> &bull; &copy; 2026 Cotton Disease Intelligence Platform.
+            </div>
+            <div>
+                <a href="/" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i> Home</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Interactive Client Scripts -->
+    <script>
+        (function() {
+            // Theme Management
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const htmlEl = document.documentElement;
+
+            function applyTheme(theme) {
+                htmlEl.setAttribute('data-theme', theme);
+                localStorage.setItem('plantpulse_theme', theme);
+                if (theme === 'dark') {
+                    themeIcon.className = 'fas fa-sun text-warning';
+                } else {
+                    themeIcon.className = 'fas fa-moon text-white';
+                }
+            }
+
+            const savedTheme = localStorage.getItem('plantpulse_theme') || 
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+
+            themeToggleBtn.addEventListener('click', function() {
+                const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            // Animated Count-Up for Percentage Numbers
+            const countElements = document.querySelectorAll('.count-up-val');
+            const duration = 1200; // ms
+            const startTime = performance.now();
+
+            function animateCounters(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // easeOutCubic
+                const ease = 1 - Math.pow(1 - progress, 3);
+
+                countElements.forEach(el => {
+                    const target = parseFloat(el.getAttribute('data-target'));
+                    if (!isNaN(target)) {
+                        const current = (target * ease).toFixed(2);
+                        el.textContent = current + '%';
+                    }
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateCounters);
+                } else {
+                    countElements.forEach(el => {
+                        const target = parseFloat(el.getAttribute('data-target'));
+                        if (!isNaN(target)) el.textContent = target.toFixed(2) + '%';
+                    });
+                }
+            }
+            requestAnimationFrame(animateCounters);
+
+            // Animate Mini Progress Bars
+            setTimeout(() => {
+                document.querySelectorAll('.mini-progress-fill').forEach(fill => {
+                    const targetW = fill.getAttribute('data-width');
+                    if (targetW) fill.style.width = targetW;
+                });
+            }, 200);
+
+            // Lightbox Modal for Chart
+            const chartTrigger = document.getElementById('chartZoomTrigger');
+            const chartLightbox = document.getElementById('chartLightbox');
+
+            if (chartTrigger && chartLightbox) {
+                chartTrigger.addEventListener('click', function() {
+                    chartLightbox.classList.add('active');
+                });
+
+                chartLightbox.addEventListener('click', function() {
+                    chartLightbox.classList.remove('active');
+                });
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && chartLightbox.classList.contains('active')) {
+                        chartLightbox.classList.remove('active');
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
